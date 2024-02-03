@@ -9,7 +9,7 @@ import threading
 from ttkthemes import ThemedStyle
 from PIL import Image, ImageTk
 import os
-
+import datetime
 
 class InterfaceGrafica:
     def __init__(self, root):
@@ -27,9 +27,19 @@ class InterfaceGrafica:
         script_dir = os.path.dirname(__file__)
         self.nome_arquivo = os.path.join(script_dir, "dados_gravados.txt")
 
+        #adiciona data e hora
+        # Adicione uma variável de controle para a data e hora
+        self.data_hora_var = tk.StringVar()
+
+        # Atualize a variável de controle periodicamente
+        self.atualizar_data_hora()
+
+        # Crie um rótulo para exibir a data e hora
+        ttk.Label(root, textvariable=self.data_hora_var, font=("Arial", 15), foreground="black").grid(row=8, column=0,sticky="w")
+
         # Utiliza o ThemedStyle
         self.style = ThemedStyle(root)
-        self.style.set_theme("xpnative")  # Escolhe o tema, você pode experimentar diferentes temas
+        self.style.set_theme("breeze")  # Escolhe o tema, você pode experimentar diferentes temas
 
         # Criar variáveis de controle para os rótulos
         self.vel_var = tk.StringVar()
@@ -112,7 +122,7 @@ class InterfaceGrafica:
 
         # Botões
         estilo_botao = ttk.Style()
-        estilo_botao.configure("EstiloBotao.TButton", font=("Arial", 15), foreground="black", background="red", width=15, height=20)
+        estilo_botao.configure("EstiloBotao.TButton", font=("Arial", 15), foreground="black", background="red", width=10, height=20)
 
         self.connect_button = ttk.Button(root, text="Conectar", command=self.conectar, style="EstiloBotao.TButton")
         self.connect_button.grid(row=6, column=1, padx=1, pady=1, sticky="w")
@@ -123,6 +133,15 @@ class InterfaceGrafica:
         # Inicializar o processo de leitura dos dados (ainda não conectado)
         self.lendo_dados = False
 
+    def atualizar_data_hora(self):
+        # Atualize a variável de controle com a data e hora atuais
+        data_hora_atual = datetime.datetime.now()
+        formato_data_hora = "%Y-%m-%d %H:%M:%S"
+        data_hora_formatada = data_hora_atual.strftime(formato_data_hora)
+        self.data_hora_var.set("Data e Hora Atuais: " + data_hora_formatada)
+
+        # Atualize a cada 1000 milissegundos (1 segundo)
+        self.root.after(1000, self.atualizar_data_hora)
     def get_var(self, index):
         # Retorna a variável apropriada com base no índice
         variaveis = [self.vel_var, self.rpm_var, self.nivel_var, self.bat_var, self.tcvt_var, self.tmot_var]
@@ -172,9 +191,9 @@ class InterfaceGrafica:
                     self.bat_var.set(f"{bat:2.1f}")
                     self.tcvt_var.set(f"{tcvt:3.1f}")
                     self.tmot_var.set(f"{tmot:3.1f}")
-
+                    data_hora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     # Salvar os dados no arquivo
-                    linha_arquivo = ",".join(map(str, (tempo, vel, rpm, tmot, tcvt, bat, nivel))) + "\n"
+                    linha_arquivo = ",".join(map(str, (vel, rpm, tmot, tcvt, bat, nivel, data_hora))) + "\n"
                     arquivo.write(linha_arquivo)
                     # Atualizar gráfico
                     self.dados_buffer.append((tempo, vel, rpm, tmot, tcvt))
