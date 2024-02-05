@@ -47,10 +47,7 @@ class InterfaceGrafica:
         self.tmot_var = tk.StringVar()
 
         # Configurar gráficos
-        self.figura, ((self.eixo_vel, self.eixo_rpm), (self.eixo_tmot, self.eixo_tcvt)) = plt.subplots(nrows=2,
-                                                                                                       ncols=2,
-                                                                                                       figsize=(15, 5),
-                                                                                                       dpi=100)
+        self.figura, ((self.eixo_vel, self.eixo_rpm), (self.eixo_tmot, self.eixo_tcvt)) = plt.subplots(nrows=2,ncols=2,figsize=(15, 5),dpi=100)
         self.figura.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
         self.linha_vel, = self.eixo_vel.plot([], [], label="Velocidade")
@@ -111,20 +108,8 @@ class InterfaceGrafica:
         unidades = ["Km/h", "RPM", "%", "V", "°C", "°C"]
 
         for i, (rotulo, unidade) in enumerate(zip(rotulos, unidades)):
-            ttk.Label(frame_rotulos, text=f"{rotulo} ({unidade}):", font=("Arial", 20), foreground="red").grid(row=i,
-                                                                                                                column=0,
-                                                                                                                rowspan=1,
-                                                                                                                columnspan=1,
-                                                                                                                padx=1,
-                                                                                                                pady=1,
-                                                                                                                sticky="e")
-            ttk.Label(frame_rotulos, textvariable=self.get_var(i), font=("Arial", 20), foreground="black").grid(row=i,
-                                                                                                                  column=1,
-                                                                                                                  rowspan=1,
-                                                                                                                  columnspan=1,
-                                                                                                                  padx=1,
-                                                                                                                  pady=1,
-                                                                                                                  sticky="w")
+            ttk.Label(frame_rotulos, text=f"{rotulo} ({unidade}):", font=("Arial", 20), foreground="red").grid(row=i,column=0,rowspan=1,columnspan=1,padx=1,pady=1,sticky="e")
+            ttk.Label(frame_rotulos, textvariable=self.get_var(i), font=("Arial", 20), foreground="black").grid(row=i,column=1,rowspan=1,columnspan=1,padx=1,pady=1,sticky="w")
 
         # Caixa de seleção para as portas COM disponíveis
         self.ports = [port.device for port in serial.tools.list_ports.comports()]
@@ -232,7 +217,7 @@ class InterfaceGrafica:
 
                 # Salvar os dados no arquivo
                 if self.nome_arquivo_log:
-                    linha_arquivo = ",".join(map(str, (vel, rpm, tmot, tcvt, bat, nivel, data_hora))) + "\n"
+                    linha_arquivo = ",".join(map(str, (vel, rpm, nivel, bat, tmot, tcvt, data_hora))) + "\n"
                     with open(self.nome_arquivo_log, "a") as arquivo:
                         arquivo.write(linha_arquivo)
 
