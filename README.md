@@ -5,5 +5,6 @@ PROCOBAJA 2024 - Guilherme Barrueco
 INSTRUÇÕES:
 
 - Execute o .exe dentro da pasta
-- Os dados lidos serão salvos no arquivo de texto dados_gravados, que sera subtituido a cada nova conexão com a porta COM.
-- Programa pode ser editado e executado com o arquivo dashboard.py
+- A cada nova leitura, um arquivo log é criado dentro da pasta logs
+- Os dados devem ser enviados como uma string na seguinte ordem: velocidade,rotação,nivel_combustivel,tensao_bateria,TCvt,TMot. Os dados sao salvos na log na mesma ordem
+
