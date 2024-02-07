@@ -1,3 +1,4 @@
+#Feito por Guilherme Barrueco 2024
 import tkinter as tk
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -9,6 +10,7 @@ from ttkthemes import ThemedStyle
 from PIL import Image, ImageTk
 import os
 import datetime
+import openpyxl
 
 class InterfaceGrafica:
     def __init__(self, root):
@@ -16,14 +18,23 @@ class InterfaceGrafica:
         self.root.title("Interface LoRa - PROCOBAJA")
         self.dados_buffer = deque(maxlen=50)  # Armazenar os últimos 50 pontos para o gráfico
 
-        # Adicionar imagem no canto superior direito
+        if os.path.exists("dados_gravados.xlsx"):
+            self.carregar_arquivo_excel()
+        else:
+            self.criar_arquivo_excel()
+
+
+       # Adicionar imagem no canto superior direito
         self.logo_image_right = Image.open("baja1.png")
         self.logo_image_right = self.logo_image_right.resize((250, 300))  # Ajuste o tamanho conforme necessário
         self.logo_photo_right = ImageTk.PhotoImage(self.logo_image_right)
         self.logo_label_right = tk.Label(root, image=self.logo_photo_right)
         self.logo_label_right.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
-        # Adiciona data e hora
+        script_dir = os.path.dirname(__file__)
+        self.nome_arquivo = os.path.join(script_dir, "dados_gravados.xlsx")
+
+        #adiciona data e hora
         # Adicione uma variável de controle para a data e hora
         self.data_hora_var = tk.StringVar()
 
@@ -31,8 +42,7 @@ class InterfaceGrafica:
         self.atualizar_data_hora()
 
         # Crie um rótulo para exibir a data e hora
-        ttk.Label(root, textvariable=self.data_hora_var, font=("Arial", 15), foreground="black").grid(row=8, column=0,
-                                                                                                       sticky="w")
+        ttk.Label(root, textvariable=self.data_hora_var, font=("Arial", 15), foreground="black").grid(row=8, column=0,sticky="w")
 
         # Utiliza o ThemedStyle
         self.style = ThemedStyle(root)
@@ -47,7 +57,7 @@ class InterfaceGrafica:
         self.tmot_var = tk.StringVar()
 
         # Configurar gráficos
-        self.figura, ((self.eixo_vel, self.eixo_rpm), (self.eixo_tmot, self.eixo_tcvt)) = plt.subplots(nrows=2,ncols=2,figsize=(15, 5),dpi=100)
+        self.figura, ((self.eixo_vel, self.eixo_rpm), (self.eixo_tmot, self.eixo_tcvt)) = plt.subplots(nrows=2, ncols=2, figsize=(15, 5), dpi=100)
         self.figura.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
         self.linha_vel, = self.eixo_vel.plot([], [], label="Velocidade")
@@ -108,35 +118,46 @@ class InterfaceGrafica:
         unidades = ["Km/h", "RPM", "%", "V", "°C", "°C"]
 
         for i, (rotulo, unidade) in enumerate(zip(rotulos, unidades)):
-            ttk.Label(frame_rotulos, text=f"{rotulo} ({unidade}):", font=("Arial", 20), foreground="red").grid(row=i,column=0,rowspan=1,columnspan=1,padx=1,pady=1,sticky="e")
-            ttk.Label(frame_rotulos, textvariable=self.get_var(i), font=("Arial", 20), foreground="black").grid(row=i,column=1,rowspan=1,columnspan=1,padx=1,pady=1,sticky="w")
+            ttk.Label(frame_rotulos, text=f"{rotulo} ({unidade}):", font=("Arial", 20), foreground="red").grid(row=i, column=0,rowspan=1, columnspan=1, padx=1, pady=1, sticky="e")
+            ttk.Label(frame_rotulos, textvariable=self.get_var(i), font=("Arial", 20), foreground="black").grid(row=i, column=1,rowspan=1, columnspan=1, padx=1, pady=1, sticky="w")
 
         # Caixa de seleção para as portas COM disponíveis
         self.ports = [port.device for port in serial.tools.list_ports.comports()]
-        if self.ports:
-            self.selected_port = tk.StringVar(value=self.ports[0])
-        else:
-            print("Nenhuma porta COM disponível.")
-            self.selected_port = tk.StringVar()
-
+        self.selected_port = tk.StringVar(value=self.ports[0])
         self.port_combobox = ttk.Combobox(root, textvariable=self.selected_port, values=self.ports, font=("Arial", 15))
-        self.port_combobox.grid(row=5, column=1, padx=1, columnspan=1, rowspan=1, pady=1, sticky="w")
+        self.port_combobox.grid(row=5, column=1, padx=1, columnspan=1, rowspan = 1, pady=1, sticky="w")
 
         # Botões
         estilo_botao = ttk.Style()
-        estilo_botao.configure("EstiloBotao.TButton", font=("Arial", 12), foreground="black", background="red", width=11,
-                               height=5)
+        estilo_botao.configure("EstiloBotao.TButton", font=("Arial", 15), foreground="black", background="red", width=10, height=20)
 
         self.connect_button = ttk.Button(root, text="Conectar", command=self.conectar, style="EstiloBotao.TButton")
         self.connect_button.grid(row=6, column=1, padx=1, pady=1, sticky="w")
 
-        self.disconnect_button = ttk.Button(root, text="Desconectar", command=self.desconectar, state=tk.DISABLED,
-                                            style="EstiloBotao.TButton")
-        self.disconnect_button.grid(row=6, column=1, padx=1, pady=1, columnspan=1, rowspan=1, sticky="e")
+        self.disconnect_button = ttk.Button(root, text="Desconectar", command=self.desconectar, state=tk.DISABLED, style="EstiloBotao.TButton")
+        self.disconnect_button.grid(row=6, column=1, padx=1, pady=1,columnspan=1, rowspan = 1, sticky="e")
 
         # Inicializar o processo de leitura dos dados (ainda não conectado)
         self.lendo_dados = False
-        self.nome_arquivo_log = None
+
+    def carregar_arquivo_excel(self):
+        # Carrega um arquivo Excel existente
+        self.workbook = openpyxl.load_workbook("dados_gravados.xlsx")
+        self.sheet = self.workbook.active
+
+    def salvar_dados_excel(self, vel, rpm, tmot, tcvt, bat, nivel, data_hora):
+        # Adicione uma nova linha com os dados
+        self.sheet.append([vel, rpm, tmot, tcvt, bat, nivel, data_hora])
+        # Salve o arquivo Excel
+        self.workbook.save("dados_gravados.xlsx")
+
+    def criar_arquivo_excel(self):
+        # Crie um novo arquivo Excel
+        self.workbook = openpyxl.Workbook()
+        self.sheet = self.workbook.active
+        # Defina os cabeçalhos das colunas
+        self.sheet.append(
+            ["Velocidade (Km/h)", "RPM", "TMOT", "TCVT", "Bateria (V)", "Nível de Combustível (%)", "Data e Hora"])
 
     def atualizar_data_hora(self):
         # Atualize a variável de controle com a data e hora atuais
@@ -147,16 +168,12 @@ class InterfaceGrafica:
 
         # Atualize a cada 1000 milissegundos (1 segundo)
         self.root.after(1000, self.atualizar_data_hora)
-
     def get_var(self, index):
         # Retorna a variável apropriada com base no índice
         variaveis = [self.vel_var, self.rpm_var, self.nivel_var, self.bat_var, self.tcvt_var, self.tmot_var]
         return variaveis[index]
 
     def conectar(self):
-        # Criar um novo arquivo de log
-        self.nome_arquivo_log = self.obter_nome_arquivo_log()
-
         # Configurar a porta serial
         self.serial = serial.Serial(self.selected_port.get(), baudrate=115200)
 
@@ -180,62 +197,47 @@ class InterfaceGrafica:
         if hasattr(self, 'serial') and self.serial.is_open:
             self.serial.close()
 
-        # Limpar o nome do arquivo de log
-        self.nome_arquivo_log = None
-
-    def obter_nome_arquivo_log(self):
-        # Obtém a data e hora atual
-        agora = datetime.datetime.now()
-        data_hora_formatada = agora.strftime("%Y-%m-%d_%H-%M-%S")
-
-        # Formata o nome do arquivo com base na data e hora
-        nome_arquivo = f"Log_{data_hora_formatada}.txt"
-
-        # Retorna o caminho completo para o arquivo dentro do diretório 'logs'
-        return os.path.join(os.getcwd(), 'logs', nome_arquivo)
-
     def ler_dados(self):
         tempo = 0
 
-        while self.lendo_dados:
-            try:
-                # Ler uma linha da porta serial
-                linha = self.serial.readline().decode('utf-8', 'ignore').strip()
-                valores = [float(valor) for valor in linha.split(",")]
+        with open(self.nome_arquivo, "a") as arquivo:
+            while self.lendo_dados:
+                try:
+                    # Ler uma linha da porta serial
+                    linha = self.serial.readline().decode('utf-8', 'ignore').strip()
+                    valores = [float(valor) for valor in linha.split(",")]
 
-                # Processar os dados da linha
-                vel, rpm, nivel, bat, tcvt, tmot = valores
+                    # Processar os dados da linha
+                    vel, rpm, nivel, bat, tcvt, tmot = valores
 
-                # Atualizar as variáveis de controle
-                self.vel_var.set(f"{vel:2.0f}")
-                self.rpm_var.set(f"{rpm:4.0f}")
-                self.nivel_var.set(f"{nivel:3.0f}")
-                self.bat_var.set(f"{bat:2.1f}")
-                self.tcvt_var.set(f"{tcvt:3.1f}")
-                self.tmot_var.set(f"{tmot:3.1f}")
-                data_hora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    # Atualizar as variáveis de controle
+                    self.vel_var.set(f"{vel:2.0f}")
+                    self.rpm_var.set(f"{rpm:4.0f}")
+                    self.nivel_var.set(f"{nivel:3.0f}")
+                    self.bat_var.set(f"{bat:2.1f}")
+                    self.tcvt_var.set(f"{tcvt:3.1f}")
+                    self.tmot_var.set(f"{tmot:3.1f}")
+                    data_hora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    # Salvar os dados no arquivo
+                    self.salvar_dados_excel(vel, rpm, tmot, tcvt, bat, nivel, data_hora)
 
-                # Salvar os dados no arquivo
-                if self.nome_arquivo_log:
-                    linha_arquivo = ",".join(map(str, (vel, rpm, nivel, bat, tmot, tcvt, data_hora))) + "\n"
-                    with open(self.nome_arquivo_log, "a") as arquivo:
-                        arquivo.write(linha_arquivo)
+                   # linha_arquivo = ",".join(map(str, (vel, rpm, tmot, tcvt, bat, nivel, data_hora))) + "\n"
+                  #  arquivo.write(linha_arquivo)
+                    # Atualizar gráfico
+                    self.dados_buffer.append((tempo, vel, rpm, tmot, tcvt))
+                    self.atualizar_grafico()
 
-                # Atualizar gráfico
-                self.dados_buffer.append((tempo, vel, rpm, tmot, tcvt))
-                self.atualizar_grafico()
+                    # Atualizar barras horizontais
+                    self.atualizar_barras(bat, nivel)
 
-                # Atualizar barras horizontais
-                self.atualizar_barras(bat, nivel)
+                    # Atualizar a interface gráfica
+                    self.root.update()
 
-                # Atualizar a interface gráfica
-                self.root.update()
+                    tempo += 1  # Aumentar o tempo para cada ponto lido
 
-                tempo += 1  # Aumentar o tempo para cada ponto lido
-
-            except Exception as e:
-                print(f"Erro ao processar dados: {e}")
-                # Adicione lógica adicional de tratamento de erro conforme necessário
+                except Exception as e:
+                    print(f"Erro ao processar dados: {e}")
+                    # Adicione lógica adicional de tratamento de erro conforme necessário
 
     def atualizar_grafico(self):
         tempos, velocidades, rpms, tmots, tcvts = zip(*self.dados_buffer)
