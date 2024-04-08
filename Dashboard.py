@@ -1,4 +1,3 @@
-#Feito por Guilherme Barrueco 2024
 import tkinter as tk
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -23,10 +22,9 @@ class InterfaceGrafica:
         else:
             self.criar_arquivo_excel()
 
-
-       # Adicionar imagem no canto superior direito
+        # Adicionar imagem no canto superior direito
         self.logo_image_right = Image.open("baja1.png")
-        self.logo_image_right = self.logo_image_right.resize((250, 300))  # Ajuste o tamanho conforme necessário
+        self.logo_image_right = self.logo_image_right.resize((200, 250))  # Ajuste o tamanho conforme necessário
         self.logo_photo_right = ImageTk.PhotoImage(self.logo_image_right)
         self.logo_label_right = tk.Label(root, image=self.logo_photo_right)
         self.logo_label_right.grid(row=0, column=1, padx=5, pady=5, sticky="w")
@@ -34,7 +32,7 @@ class InterfaceGrafica:
         script_dir = os.path.dirname(__file__)
         self.nome_arquivo = os.path.join(script_dir, "dados_gravados.xlsx")
 
-        #adiciona data e hora
+        # Adiciona data e hora
         # Adicione uma variável de controle para a data e hora
         self.data_hora_var = tk.StringVar()
 
@@ -42,7 +40,7 @@ class InterfaceGrafica:
         self.atualizar_data_hora()
 
         # Crie um rótulo para exibir a data e hora
-        ttk.Label(root, textvariable=self.data_hora_var, font=("Arial", 15), foreground="black").grid(row=8, column=0,sticky="w")
+        ttk.Label(root, textvariable=self.data_hora_var, font=("Arial", 15), foreground="black").grid(row=8, column=0, sticky="w")
 
         # Utiliza o ThemedStyle
         self.style = ThemedStyle(root)
@@ -118,14 +116,14 @@ class InterfaceGrafica:
         unidades = ["Km/h", "RPM", "%", "V", "°C", "°C"]
 
         for i, (rotulo, unidade) in enumerate(zip(rotulos, unidades)):
-            ttk.Label(frame_rotulos, text=f"{rotulo} ({unidade}):", font=("Arial", 20), foreground="red").grid(row=i, column=0,rowspan=1, columnspan=1, padx=1, pady=1, sticky="e")
-            ttk.Label(frame_rotulos, textvariable=self.get_var(i), font=("Arial", 20), foreground="black").grid(row=i, column=1,rowspan=1, columnspan=1, padx=1, pady=1, sticky="w")
+            ttk.Label(frame_rotulos, text=f"{rotulo} ({unidade}):", font=("Arial", 20), foreground="red").grid(row=i, column=0, rowspan=1, columnspan=1, padx=1, pady=1, sticky="e")
+            ttk.Label(frame_rotulos, textvariable=self.get_var(i), font=("Arial", 20), foreground="black").grid(row=i, column=1, rowspan=1, columnspan=1, padx=1, pady=1, sticky="w")
 
         # Caixa de seleção para as portas COM disponíveis
         self.ports = [port.device for port in serial.tools.list_ports.comports()]
         self.selected_port = tk.StringVar(value=self.ports[0])
         self.port_combobox = ttk.Combobox(root, textvariable=self.selected_port, values=self.ports, font=("Arial", 15))
-        self.port_combobox.grid(row=5, column=1, padx=1, columnspan=1, rowspan = 1, pady=1, sticky="w")
+        self.port_combobox.grid(row=5, column=1, padx=1, columnspan=1, rowspan=1, pady=1, sticky="w")
 
         # Botões
         estilo_botao = ttk.Style()
@@ -135,7 +133,10 @@ class InterfaceGrafica:
         self.connect_button.grid(row=6, column=1, padx=1, pady=1, sticky="w")
 
         self.disconnect_button = ttk.Button(root, text="Desconectar", command=self.desconectar, state=tk.DISABLED, style="EstiloBotao.TButton")
-        self.disconnect_button.grid(row=6, column=1, padx=1, pady=1,columnspan=1, rowspan = 1, sticky="e")
+        self.disconnect_button.grid(row=6, column=1, padx=1, pady=1, columnspan=1, rowspan=1, sticky="e")
+
+        self.reset_button = ttk.Button(root, text="Resetar Dados", command=self.resetar_dados_excel, style="EstiloBotao.TButton")
+        self.reset_button.grid(row=7, column=1, padx=1, pady=1, columnspan=1, rowspan=1, sticky="e")
 
         # Inicializar o processo de leitura dos dados (ainda não conectado)
         self.lendo_dados = False
@@ -168,6 +169,7 @@ class InterfaceGrafica:
 
         # Atualize a cada 1000 milissegundos (1 segundo)
         self.root.after(1000, self.atualizar_data_hora)
+
     def get_var(self, index):
         # Retorna a variável apropriada com base no índice
         variaveis = [self.vel_var, self.rpm_var, self.nivel_var, self.bat_var, self.tcvt_var, self.tmot_var]
@@ -192,6 +194,7 @@ class InterfaceGrafica:
         # Desativar/desativar botões
         self.connect_button.configure(state=tk.NORMAL)
         self.disconnect_button.configure(state=tk.DISABLED)
+        self.reset_button.configure(state=tk.NORMAL)
 
         # Fechar a porta serial
         if hasattr(self, 'serial') and self.serial.is_open:
@@ -200,44 +203,41 @@ class InterfaceGrafica:
     def ler_dados(self):
         tempo = 0
 
-        with open(self.nome_arquivo, "a") as arquivo:
-            while self.lendo_dados:
-                try:
-                    # Ler uma linha da porta serial
-                    linha = self.serial.readline().decode('utf-8', 'ignore').strip()
-                    valores = [float(valor) for valor in linha.split(",")]
+        while self.lendo_dados:
+            try:
+                # Ler uma linha da porta serial
+                linha = self.serial.readline().decode('utf-8', 'ignore').strip()
+                valores = [float(valor) for valor in linha.split(",")]
 
-                    # Processar os dados da linha
-                    vel, rpm, nivel, bat, tcvt, tmot = valores
+                # Processar os dados da linha
+                vel, rpm, nivel, bat, tcvt, tmot = valores
 
-                    # Atualizar as variáveis de controle
-                    self.vel_var.set(f"{vel:2.0f}")
-                    self.rpm_var.set(f"{rpm:4.0f}")
-                    self.nivel_var.set(f"{nivel:3.0f}")
-                    self.bat_var.set(f"{bat:2.1f}")
-                    self.tcvt_var.set(f"{tcvt:3.1f}")
-                    self.tmot_var.set(f"{tmot:3.1f}")
-                    data_hora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    # Salvar os dados no arquivo
-                    self.salvar_dados_excel(vel, rpm, tmot, tcvt, bat, nivel, data_hora)
+                # Atualizar as variáveis de controle
+                self.vel_var.set(f"{vel:2.0f}")
+                self.rpm_var.set(f"{rpm:4.0f}")
+                self.nivel_var.set(f"{nivel:3.0f}")
+                self.bat_var.set(f"{bat:2.1f}")
+                self.tcvt_var.set(f"{tcvt:3.1f}")
+                self.tmot_var.set(f"{tmot:3.1f}")
+                data_hora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                # Salvar os dados no arquivo
+                self.salvar_dados_excel(vel, rpm, tmot, tcvt, bat, nivel, data_hora)
 
-                   # linha_arquivo = ",".join(map(str, (vel, rpm, tmot, tcvt, bat, nivel, data_hora))) + "\n"
-                  #  arquivo.write(linha_arquivo)
-                    # Atualizar gráfico
-                    self.dados_buffer.append((tempo, vel, rpm, tmot, tcvt))
-                    self.atualizar_grafico()
+                # Atualizar gráfico
+                self.dados_buffer.append((tempo, vel, rpm, tmot, tcvt))
+                self.atualizar_grafico()
 
-                    # Atualizar barras horizontais
-                    self.atualizar_barras(bat, nivel)
+                # Atualizar barras horizontais
+                self.atualizar_barras(bat, nivel)
 
-                    # Atualizar a interface gráfica
-                    self.root.update()
+                # Atualizar a interface gráfica
+                self.root.update()
 
-                    tempo += 1  # Aumentar o tempo para cada ponto lido
+                tempo += 1  # Aumentar o tempo para cada ponto lido
 
-                except Exception as e:
-                    print(f"Erro ao processar dados: {e}")
-                    # Adicione lógica adicional de tratamento de erro conforme necessário
+            except Exception as e:
+                print(f"Erro ao processar dados: {e}")
+                # Adicione lógica adicional de tratamento de erro conforme necessário
 
     def atualizar_grafico(self):
         tempos, velocidades, rpms, tmots, tcvts = zip(*self.dados_buffer)
@@ -264,6 +264,12 @@ class InterfaceGrafica:
         self.barra_nivel[0].set_width(nivel)
 
         self.canvas_barras.draw()
+
+    def resetar_dados_excel(self):
+        if os.path.exists("dados_gravados.xlsx"):
+            os.remove("dados_gravados.xlsx")
+            self.criar_arquivo_excel()
+            print("Dados resetados com sucesso!")
 
 if __name__ == "__main__":
     root = tk.Tk()
